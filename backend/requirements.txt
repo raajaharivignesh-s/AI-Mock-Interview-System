@@ -4,3 +4,5 @@ python-multipart
 openai
 pydantic
 python-dotenv
+pdfminer.six
+python-docx
