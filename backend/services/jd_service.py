@@ -1,40 +1,99 @@
 import json
+from fastapi import HTTPException
 from services.openai_client import call_llm
 from config import TEMPERATURE_LOW
 
 
-async def analyze_jd(jd_text: str):
+async def analyze_jd(jd_text: str) -> dict:
     """
     Extract structured information from Job Description.
+    Returns validated dictionary for InterviewState.
     """
 
+    if not jd_text or len(jd_text.strip()) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Job Description content too short or empty."
+        )
+
     prompt = f"""
-You are a professional technical recruiter.
+You are a senior technical recruiter.
 
-Extract structured information from the following Job Description.
+Extract structured information from the Job Description below.
 
-Return STRICT JSON only in this format:
+Return STRICT JSON only in this exact format:
 
 {{
-  "role": "",
-  "required_skills": [],
-  "preferred_skills": [],
-  "experience_level": ""
+  "role": "string",
+  "required_skills": ["skill1", "skill2"],
+  "preferred_skills": ["skillA", "skillB"],
+  "experience_level": "Junior | Mid | Senior | Lead | Not Specified"
 }}
 
+Rules:
+- required_skills must include ONLY mandatory technical skills.
+- preferred_skills must include optional/nice-to-have technical skills.
+- Remove duplicates.
+- Ignore soft skills unless clearly technical.
+- If preferred skills are not mentioned, return empty list.
+- Infer experience_level from context if possible.
+- Output JSON only. No explanation.
+
 Job Description:
+\"\"\"
 {jd_text}
+\"\"\"
 """
 
     response = await call_llm(
         prompt=prompt,
         temperature=TEMPERATURE_LOW,
-        max_tokens=300
+        max_tokens=400
     )
 
     try:
-        return json.loads(response)
-    except json.JSONDecodeError:
-        # If model adds extra text, try cleaning
-        cleaned = response.strip().replace("```json", "").replace("```", "")
-        return json.loads(cleaned)
+        structured_data = _safe_json_parse(response)
+        _validate_jd_structure(structured_data)
+        return structured_data
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"JD parsing failed: {str(e)}"
+        )
+
+
+# -----------------------------------------
+# Helpers
+# -----------------------------------------
+
+def _safe_json_parse(response: str) -> dict:
+    """
+    Cleans markdown wrappers and parses JSON safely.
+    """
+    cleaned = (
+        response.strip()
+        .replace("```json", "")
+        .replace("```", "")
+        .strip()
+    )
+
+    return json.loads(cleaned)
+
+
+def _validate_jd_structure(data: dict):
+    required_keys = {
+        "role",
+        "required_skills",
+        "preferred_skills",
+        "experience_level"
+    }
+
+    if not all(key in data for key in required_keys):
+        raise ValueError("JD structure incomplete.")
+
+    if not isinstance(data["required_skills"], list):
+        raise ValueError("required_skills must be a list.")
+
+    if not isinstance(data["preferred_skills"], list):
+        raise ValueError("preferred_skills must be a list.")

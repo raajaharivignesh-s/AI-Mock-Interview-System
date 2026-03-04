@@ -1,4 +1,5 @@
 # app.py
+<<<<<<< HEAD
 from fastapi import FastAPI, Header, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,10 +8,19 @@ import io
 import PyPDF2
 import docx
 import base64
+=======
+
+from fastapi import FastAPI, Header, HTTPException, UploadFile, File, Form
+from pydantic import BaseModel
+import uuid
+>>>>>>> origin/Resume-and-JD
 
 from models.interview_state import InterviewState
 from services import interview_service, evaluation_service, jd_service, resume_service, openai_client
 from services.report_service import generate_report
+from services.resume_service import parse_resume
+from services.jd_service import analyze_jd
+from utils.document_parser import extract_text_from_upload
 
 app = FastAPI()
 
@@ -28,12 +38,49 @@ SESSIONS = {}
 # -----------------------------
 # Input Models
 # -----------------------------
+<<<<<<< HEAD
 class JDSubmitInput(BaseModel):
     jd: str
+=======
+
+class JDInput(BaseModel):
+    role: str
+    required_skills: list[str]
+    preferred_skills: list[str] = []
+
+class ResumeInput(BaseModel):
+    candidate_name: str
+    skills: list[str]
+    projects: list[str] = []
+    experience_years: str = ""
+    primary_domain: str = ""
+
+class StartInterviewInput(BaseModel):
+    jd: JDInput
+    resume: ResumeInput
+
+class SubmitAnswerInput(BaseModel):
+    answer: str
+>>>>>>> origin/Resume-and-JD
+
+class DebugResumeInput(BaseModel):
+    resume_text: str
+
+class DebugJDInput(BaseModel):
+    jd_text: str
 
 # -----------------------------
 # Endpoints
 # -----------------------------
+<<<<<<< HEAD
+=======
+
+@app.post("/start_interview")
+async def start_interview(input_data: StartInterviewInput):
+    state = InterviewState()
+    state.jd_profile = input_data.jd.dict()
+    state.resume_profile = input_data.resume.dict()
+>>>>>>> origin/Resume-and-JD
 
 @app.post("/submit-jd")
 async def submit_jd(input_data: JDSubmitInput):
@@ -52,10 +99,26 @@ async def submit_jd(input_data: JDSubmitInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+<<<<<<< HEAD
 @app.post("/upload-resume")
 async def upload_resume(
     file: UploadFile = File(...),
     session_id: str = Form(None)
+=======
+    return {
+        "session_token": token,
+        "question": question
+    }
+
+# -----------------------------
+# Submit answer endpoint
+# -----------------------------
+
+@app.post("/submit_answer")
+async def submit_answer(
+    input_data: SubmitAnswerInput,
+    session_token: str = Header(...)
+>>>>>>> origin/Resume-and-JD
 ):
     """
     Step 2: Parses the uploaded resume, connects it to the session, and prepares the interview.
@@ -143,8 +206,14 @@ async def submit_answer(
     """
     if not session_id or session_id not in SESSIONS:
         raise HTTPException(status_code=404, detail="Session not found")
+<<<<<<< HEAD
         
     state = SESSIONS[session_id]
+=======
+
+    state = SESSIONS[session_token]
+
+>>>>>>> origin/Resume-and-JD
     if not state.is_active:
         return {"report_ready": True}
 
@@ -165,7 +234,14 @@ async def submit_answer(
     
     state.add_score(score_100)
 
+<<<<<<< HEAD
     # Next question
+=======
+    # Update score
+    state.add_score(evaluation.get("score", 0))
+
+    # Generate next question
+>>>>>>> origin/Resume-and-JD
     next_question, skill = await interview_service.generate_question(state)
 
     state.log_interaction(
@@ -176,6 +252,7 @@ async def submit_answer(
         evaluation=evaluation
     )
 
+<<<<<<< HEAD
     state.previous_question = next_question
 
     # Generate audio for the next question
@@ -228,3 +305,42 @@ async def get_report(session_id: str = None):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+=======
+    # Check termination
+    terminate, reason = termination_service.should_terminate_interview(state)
+
+    if terminate:
+        state.end_interview()
+        return {"report": generate_report(state)}
+
+    return {
+        "next_question": next_question,
+        "evaluation": evaluation
+    }
+
+# -----------------------------
+# Debug endpoints (text)
+# -----------------------------
+
+@app.post("/debug/parse_resume")
+async def debug_parse_resume(input_data: DebugResumeInput):
+    return await parse_resume(input_data.resume_text)
+
+@app.post("/debug/analyze_jd")
+async def debug_analyze_jd(input_data: DebugJDInput):
+    return await analyze_jd(input_data.jd_text)
+
+# -----------------------------
+# Debug endpoints (file upload)
+# -----------------------------
+
+@app.post("/debug/upload_resume")
+async def debug_upload_resume(file: UploadFile = File(...)):
+    text = await extract_text_from_upload(file)
+    return await parse_resume(text)
+
+@app.post("/debug/upload_jd")
+async def debug_upload_jd(file: UploadFile = File(...)):
+    text = await extract_text_from_upload(file)
+    return await analyze_jd(text)
+>>>>>>> origin/Resume-and-JD

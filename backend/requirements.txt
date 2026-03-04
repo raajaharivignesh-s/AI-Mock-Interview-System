@@ -4,6 +4,11 @@ python-multipart
 openai
 pydantic
 python-dotenv
+<<<<<<< HEAD
 PyPDF2
 python-docx
 httpx
+=======
+pdfminer.six
+python-docx
+>>>>>>> origin/Resume-and-JD
