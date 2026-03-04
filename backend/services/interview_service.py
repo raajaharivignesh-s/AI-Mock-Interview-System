@@ -44,9 +44,12 @@ Return ONLY the question sentence.
 {static_prompt}
 Previous Question: {state.previous_question}
 Candidate Answer: {state.previous_answer}
-If answer is strong, move to next skill {skill_to_ask}.
-If answer is weak, ask a follow-up on same skill.
-Return ONLY one clear technical question.
+
+You are a professional, senior HR recruiter. DO NOT ACT LIKE A CHATBOT. Do not use phrases like "Certainly" or "Here is the next question".
+If the answer is strong, transition naturally to {skill_to_ask}. 
+If the answer is weak, ask a probing follow-up on the same skill.
+Your response should sound exactly like a real human HR interviewer speaking to a candidate.
+Return ONLY the exact spoken sentence you want to say to the candidate.
 """
 
     question = await call_llm(prompt=dynamic_prompt, temperature=TEMPERATURE_MEDIUM, max_tokens=150)

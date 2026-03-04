@@ -2,7 +2,6 @@ import json
 from services.openai_client import call_llm
 from config import TEMPERATURE_LOW
 
-
 async def analyze_resume(resume_text: str):
     """
     Extract structured information from Resume.
