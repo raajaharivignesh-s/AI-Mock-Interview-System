@@ -1,23 +1,27 @@
-# backend/services/resume_service.py
+"""
+services/resume_service.py
 
+Processes raw Resume text to extract a structured profile including skills,
+projects, and experience level required to tailor the interview.
+"""
 import json
 from fastapi import HTTPException
 from services.openai_client import call_llm
 from config import TEMPERATURE_LOW
 
-<<<<<<< HEAD
 async def analyze_resume(resume_text: str):
-=======
-
-# -----------------------------------------
-# Resume Parsing Function
-# -----------------------------------------
-
+    return await parse_resume(resume_text)
+    
 async def parse_resume(resume_text: str) -> dict:
->>>>>>> origin/Resume-and-JD
     """
-    Extract structured resume profile from raw resume text using LLM.
-    Returns a dictionary compatible with InterviewState.
+    Extracts a structured resume profile from raw resume text using the LLM.
+    
+    Args:
+        resume_text: Raw string text extracted from the candidate's PDF or DOCX.
+        
+    Returns:
+        A validated dictionary compatible with InterviewState containing
+        (candidate_name, skills, projects, experience_years, primary_domain).
     """
 
     if not resume_text or len(resume_text.strip()) < 50:
@@ -78,6 +82,10 @@ Resume:
 # -----------------------------------------
 
 def _validate_resume_structure(data: dict):
+    """
+    Validates that the extracted resume dictionary contains all mandatory
+    fields and correct data types expected by the system logic.
+    """
     required_keys = {
         "candidate_name",
         "skills",

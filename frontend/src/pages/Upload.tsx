@@ -1,8 +1,18 @@
+/**
+ * pages/Upload.tsx
+ * 
+ * Step 2 of the interview flow. Provides a drag-and-drop interface for uploading
+ * a resume (PDF/DOCX). Sends it to the backend to be parsed and cross-referenced
+ * with the active session's Job Description.
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload as UploadIcon, FileText, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import { api, ResumeUploadResponse } from '../services/api';
 
+/**
+ * Resume Upload Component
+ */
 export default function Upload() {
   const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);

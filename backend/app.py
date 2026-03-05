@@ -1,5 +1,11 @@
-# app.py
-<<<<<<< HEAD
+"""
+app.py
+
+Main entry point for the FastAPI backend of the AI Mock Interview System.
+Provides REST API endpoints for uploading resumes, parsing job descriptions,
+managing interview sessions, transcribing audio, evaluating answers, and
+generating the final performance report.
+"""
 from fastapi import FastAPI, Header, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,12 +14,6 @@ import io
 import PyPDF2
 import docx
 import base64
-=======
-
-from fastapi import FastAPI, Header, HTTPException, UploadFile, File, Form
-from pydantic import BaseModel
-import uuid
->>>>>>> origin/Resume-and-JD
 
 from models.interview_state import InterviewState
 from services import interview_service, evaluation_service, jd_service, resume_service, openai_client
@@ -38,30 +38,8 @@ SESSIONS = {}
 # -----------------------------
 # Input Models
 # -----------------------------
-<<<<<<< HEAD
 class JDSubmitInput(BaseModel):
     jd: str
-=======
-
-class JDInput(BaseModel):
-    role: str
-    required_skills: list[str]
-    preferred_skills: list[str] = []
-
-class ResumeInput(BaseModel):
-    candidate_name: str
-    skills: list[str]
-    projects: list[str] = []
-    experience_years: str = ""
-    primary_domain: str = ""
-
-class StartInterviewInput(BaseModel):
-    jd: JDInput
-    resume: ResumeInput
-
-class SubmitAnswerInput(BaseModel):
-    answer: str
->>>>>>> origin/Resume-and-JD
 
 class DebugResumeInput(BaseModel):
     resume_text: str
@@ -72,20 +50,18 @@ class DebugJDInput(BaseModel):
 # -----------------------------
 # Endpoints
 # -----------------------------
-<<<<<<< HEAD
-=======
-
-@app.post("/start_interview")
-async def start_interview(input_data: StartInterviewInput):
-    state = InterviewState()
-    state.jd_profile = input_data.jd.dict()
-    state.resume_profile = input_data.resume.dict()
->>>>>>> origin/Resume-and-JD
 
 @app.post("/submit-jd")
 async def submit_jd(input_data: JDSubmitInput):
     """
-    Step 1: Analyzes the JD and creates an interview session.
+    Step 1: Parse and Analyze Job Description (JD).
+    
+    Accepts a raw job description string, runs it through the JD service to
+    extract required skills and role details, and initializes a new 
+    InterviewState session.
+    
+    Returns:
+        JSON response containing the unique `session_id`.
     """
     try:
         jd_profile = await jd_service.analyze_jd(input_data.jd)
@@ -99,29 +75,21 @@ async def submit_jd(input_data: JDSubmitInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-<<<<<<< HEAD
 @app.post("/upload-resume")
 async def upload_resume(
     file: UploadFile = File(...),
     session_id: str = Form(None)
-=======
-    return {
-        "session_token": token,
-        "question": question
-    }
-
-# -----------------------------
-# Submit answer endpoint
-# -----------------------------
-
-@app.post("/submit_answer")
-async def submit_answer(
-    input_data: SubmitAnswerInput,
-    session_token: str = Header(...)
->>>>>>> origin/Resume-and-JD
 ):
     """
-    Step 2: Parses the uploaded resume, connects it to the session, and prepares the interview.
+    Step 2: Parse Uploaded Resume and Initialize Interview.
+    
+    Extracts text from the uploaded PDF or DOCX resume, cross-references it 
+    with the JD profile stored in the given session, and generates the very 
+    first interview question along with its TTS audio representation.
+    
+    Returns:
+        JSON response with the extracted skills, experience level, 
+        session ID, first question, and base64 encoded audio bytes.
     """
     if not session_id or session_id not in SESSIONS:
         raise HTTPException(status_code=400, detail="Missing or invalid session_id. Please submit JD first to initialize session.")
@@ -196,28 +164,23 @@ async def submit_answer(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/submit-answer")
-async def submit_answer(
+@app.post("/transcribe-audio")
+async def transcribe_audio(
     audio: UploadFile = File(...),
     session_id: str = Form(...)
 ):
     """
-    Step 3: Evaluate spoken answer and generate the next question.
+    Step 3.1: Transcribe Candidate Audio.
+    
+    Receives an audio blob from the frontend and uses OpenAI's Whisper model
+    through the `openai_client` to accurately transcribe it to text.
+    
+    Returns:
+        JSON response with the transcribed text.
     """
     if not session_id or session_id not in SESSIONS:
         raise HTTPException(status_code=404, detail="Session not found")
-<<<<<<< HEAD
-        
-    state = SESSIONS[session_id]
-=======
-
-    state = SESSIONS[session_token]
-
->>>>>>> origin/Resume-and-JD
-    if not state.is_active:
-        return {"report_ready": True}
-
-    # Transcribe candidate's audio using Whisper
+    
     try:
         audio_content = await audio.read()
         answer_text = await openai_client.transcribe_audio(audio_content, audio.filename)
@@ -225,6 +188,33 @@ async def submit_answer(
         import traceback
         traceback.print_exc()
         answer_text = "I have solid practical experience responding to these exact system requirements."
+        
+    return {"transcript": answer_text}
+
+
+@app.post("/submit-answer")
+async def submit_answer(
+    transcript: str = Form(...),
+    session_id: str = Form(...)
+):
+    """
+    Step 3.2: Evaluate Answer and Generate Next Question.
+    
+    Receives the verified text transcript of the candidate's answer. Evaluates
+    the performance using the LLM, logs the interaction, updates the running
+    score, and generates the *next* context-aware interview question.
+    
+    Returns:
+        JSON response with the current continuous score, specific feedback on
+        the answer, the next question, and its audio representation.
+    """
+    if not session_id or session_id not in SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    state = SESSIONS[session_id]
+    if not state.is_active:
+        return {"report_ready": True}
+
+    answer_text = transcript
     state.previous_answer = answer_text
 
     # Evaluate the transcribed answer
@@ -234,14 +224,7 @@ async def submit_answer(
     
     state.add_score(score_100)
 
-<<<<<<< HEAD
     # Next question
-=======
-    # Update score
-    state.add_score(evaluation.get("score", 0))
-
-    # Generate next question
->>>>>>> origin/Resume-and-JD
     next_question, skill = await interview_service.generate_question(state)
 
     state.log_interaction(
@@ -252,7 +235,6 @@ async def submit_answer(
         evaluation=evaluation
     )
 
-<<<<<<< HEAD
     state.previous_question = next_question
 
     # Generate audio for the next question
@@ -273,7 +255,6 @@ async def submit_answer(
         "confidence": score_100,
         "improvement": evaluation.get("improvements", "Keep providing specific examples."),
         "next_question": next_question or "Thank you, the interview is complete.",
-        "transcript": answer_text,
         "audio_base64": audio_base64
     }
 
@@ -281,7 +262,15 @@ async def submit_answer(
 @app.get("/generate-report")
 async def get_report(session_id: str = None):
     """
-    Step 4: Returns the final structured report of the interview.
+    Step 4: Generate Final Interview Report.
+    
+    Compiles all accumulated scores, tracking logs, and skill evaluations
+    from the interview session into a structured format expected by the 
+    frontend reporting charts.
+    
+    Returns:
+        JSON response packed with overall and metric-specific scores, 
+        strengths, improvements, and the detailed interview log.
     """
     if not session_id or session_id not in SESSIONS:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -299,28 +288,15 @@ async def get_report(session_id: str = None):
         "confidence": avg_score,
         "skills_analysis": [ {"skill": s, "score": avg_score} for s in report.get("covered_skills", [])],
         "improvements": ["Work on providing more concrete examples.", "Expand upon technical trade-offs discussed."],
-        "strengths": ["Clear communication.", "Solid grasp of fundamentals."]
-    }
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-=======
-    # Check termination
-    terminate, reason = termination_service.should_terminate_interview(state)
-
-    if terminate:
-        state.end_interview()
-        return {"report": generate_report(state)}
-
-    return {
-        "next_question": next_question,
-        "evaluation": evaluation
+        "strengths": ["Clear communication.", "Solid grasp of fundamentals."],
+        "detailed_log": report.get("detailed_log", [])
     }
 
 # -----------------------------
 # Debug endpoints (text)
 # -----------------------------
+
+from services.termination_service import should_terminate_interview
 
 @app.post("/debug/parse_resume")
 async def debug_parse_resume(input_data: DebugResumeInput):
@@ -343,4 +319,7 @@ async def debug_upload_resume(file: UploadFile = File(...)):
 async def debug_upload_jd(file: UploadFile = File(...)):
     text = await extract_text_from_upload(file)
     return await analyze_jd(text)
->>>>>>> origin/Resume-and-JD
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,8 +1,17 @@
+/**
+ * pages/JobDescription.tsx
+ * 
+ * Step 1 of the interview flow. Allows the user to paste a Job Description (JD).
+ * Submits the JD to the backend to initialize an interview session and store the ID.
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Briefcase, ArrowRight, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 
+/**
+ * JobDescription Data Entry Component
+ */
 export default function JobDescription() {
   const navigate = useNavigate();
   const [jdText, setJdText] = useState('');

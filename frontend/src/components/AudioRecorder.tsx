@@ -1,11 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 
+/**
+ * Props for the AudioRecorder component.
+ */
 interface AudioRecorderProps {
+  /** Callback fired when the user successfully finishes an audio recording session. */
   onRecordingComplete: (blob: Blob) => Promise<void>;
+  /** Disables the record button while the backend is processing the previous audio. */
   isProcessing: boolean;
 }
 
+/**
+ * AudioRecorder Component
+ * 
+ * Manages the microphone permission, captures audio streams, visualizes audio 
+ * frequency data, and returns the final WAV blob upon completion.
+ */
 export default function AudioRecorder({ onRecordingComplete, isProcessing }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);

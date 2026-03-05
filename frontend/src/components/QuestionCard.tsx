@@ -1,9 +1,20 @@
 // Removed UserCircle import
+/**
+ * Props for the QuestionCard component.
+ */
 interface QuestionCardProps {
+  /** The text of the AI interviewer's most recent question */
   question: string;
+  /** Toggles the loading animation if the AI is currently generating a response */
   isThinking?: boolean;
 }
 
+/**
+ * QuestionCard Component
+ * 
+ * Displays the AI avatar, interviewer metadata, and the current question text.
+ * Switches to a "Thinking" animation state when awaiting the backend response.
+ */
 export default function QuestionCard({ question, isThinking }: QuestionCardProps) {
   return (
     <div className="flex flex-col h-full justify-center space-y-8 animate-fade-in-up">

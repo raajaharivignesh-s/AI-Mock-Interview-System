@@ -1,20 +1,28 @@
+"""
+services/evaluation_service.py
 
-# services/evaluation_service.py
-
+Provides functionality to evaluate a candidate's answer against the asked question
+using the LLM. It extracts a continuous score and specific textual feedback.
+"""
 from services.openai_client import call_llm
 import json
 
 async def evaluate_answer(state):
     """
-    Evaluate the candidate's last answer dynamically using LLM.
-    Returns a semantic, structured dictionary:
-    {
-        "score": 0-10,
-        "technical_depth": "Detailed explanation of technical correctness",
-        "communication": "Observations on clarity and articulation",
-        "strengths": "What was done well in the answer",
-        "improvements": "Suggestions for improving the answer"
-    }
+    Evaluates the candidate's last answer dynamically using the AI model.
+    
+    Args:
+        state: The ongoing InterviewState object containing the previous question and answer.
+        
+    Returns:
+        A semantic, structured dictionary containing:
+        {
+            "score": 0-10,
+            "technical_depth": "Detailed explanation of technical correctness",
+            "communication": "Observations on clarity and articulation",
+            "strengths": "What was done well in the answer",
+            "improvements": "Suggestions for improving the answer"
+        }
     """
 
     # Ensure we have a previous question and answer

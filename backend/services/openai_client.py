@@ -1,3 +1,9 @@
+"""
+services/openai_client.py
+
+Centralized client for interacting with the OpenAI API.
+Handles chat completions, Whisper audio transcriptions, and TTS speech generation.
+"""
 from openai import AsyncOpenAI
 from config import OPENAI_API_KEY, OPENAI_BASE_URL, MODEL_NAME
 
@@ -9,8 +15,16 @@ client = AsyncOpenAI(
 
 async def call_llm(prompt: str, temperature: float = 0.2, max_tokens: int = 300):
     """
-    Generic async LLM caller.
-    All OpenAI calls should go through this function.
+    Generic async LLM caller using the configured model.
+    All text-based OpenAI generation uses this function.
+    
+    Args:
+        prompt: The fully constructed string prompt to send.
+        temperature: Controls randomness (default 0.2 for deterministic output).
+        max_tokens: The maximum length of the generated response.
+        
+    Returns:
+        The string content of the LLM's response.
     """
 
     response = await client.chat.completions.create(
@@ -33,7 +47,14 @@ async def call_llm(prompt: str, temperature: float = 0.2, max_tokens: int = 300)
 
 async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav"):
     """
-    Convert candidate's spoken audio into text using Whisper API.
+    Converts candidate's spoken audio into text using the Whisper API.
+    
+    Args:
+        audio_content: Raw bytes of the uploaded audio file.
+        filename: Optional filename to identify the format (e.g., audio.wav).
+        
+    Returns:
+        The transcribed text string.
     """
     try:
         from io import BytesIO
@@ -50,7 +71,14 @@ async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav"):
 
 async def generate_speech(text: str):
     """
-    Generate professional HR voice audio from text utilizing OpenAI's TTS model.
+    Generates professional HR voice audio from text utilizing OpenAI's TTS model.
+    Used to speak the generated interview questions out loud.
+    
+    Args:
+        text: The string text to synthesize.
+        
+    Returns:
+        Raw audio bytes.
     """
     response = await client.audio.speech.create(
         model="gpt-4o-mini-tts",  # Required by your specific proxy key

@@ -1,3 +1,9 @@
+"""
+services/jd_service.py
+
+Processes raw Job Description (JD) text to extract structured information
+like role title and required skills needed to drive the interview flow.
+"""
 import json
 from fastapi import HTTPException
 from services.openai_client import call_llm
@@ -6,8 +12,14 @@ from config import TEMPERATURE_LOW
 
 async def analyze_jd(jd_text: str) -> dict:
     """
-    Extract structured information from Job Description.
-    Returns validated dictionary for InterviewState.
+    Extracts structured information from a raw Job Description text.
+    
+    Args:
+        jd_text: The raw string content of the job description.
+        
+    Returns:
+        A validated dictionary containing the extracted JD details
+        (role, required_skills, preferred_skills, experience_level).
     """
 
     if not jd_text or len(jd_text.strip()) < 50:
@@ -69,7 +81,8 @@ Job Description:
 
 def _safe_json_parse(response: str) -> dict:
     """
-    Cleans markdown wrappers and parses JSON safely.
+    Safely parses JSON strings returned by the LLM by stripping out
+    potential markdown wrappers (e.g., ```json ... ```) and leading/trailing whitespace.
     """
     cleaned = (
         response.strip()
@@ -82,6 +95,10 @@ def _safe_json_parse(response: str) -> dict:
 
 
 def _validate_jd_structure(data: dict):
+    """
+    Validates that the extracted JD dictionary contains all the
+    mandatory fields and correct data types expected by the system.
+    """
     required_keys = {
         "role",
         "required_skills",

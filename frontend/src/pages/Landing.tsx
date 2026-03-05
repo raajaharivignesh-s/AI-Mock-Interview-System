@@ -1,6 +1,15 @@
+/**
+ * pages/Landing.tsx
+ * 
+ * The initial entry point of the application. Displays the hero section,
+ * value propositions, and a call-to-action to start the interview process.
+ */
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
+/**
+ * Landing Page Component
+ */
 export default function Landing() {
   const navigate = useNavigate();
 

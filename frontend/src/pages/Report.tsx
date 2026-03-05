@@ -1,9 +1,19 @@
+/**
+ * pages/Report.tsx
+ * 
+ * Step 4 of the interview flow. This page generates and displays a comprehensive session
+ * report based on the candidate's aggregated scores. It visualizes data using Radar and Bar 
+ * charts, highlights strengths/improvements, and provides an exportable full transcript.
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Home, TrendingUp, Award } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, ReportData } from '../services/api';
 
+/**
+ * Final Feedback and Analytics Dashboard
+ */
 export default function Report() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -25,6 +35,10 @@ export default function Report() {
     }
   };
 
+  /**
+   * Auto-generates a formatted plain-text file combining scores and qualitative feedback
+   * for the candidate to download directly entirely on the client-side.
+   */
   const handleDownload = () => {
     const content = `
 AI Mock Interview Report
@@ -226,6 +240,50 @@ ${reportData?.improvements.map(i => `- ${i}`).join('\n')}
             </ul>
           </div>
         </div>
+
+        {/* Detailed Interview Log */}
+        {reportData.detailed_log && reportData.detailed_log.length > 0 && (
+          <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+            <h3 className="text-2xl font-bold text-white mb-6 pt-4">Full Interview Transcript & Feedback</h3>
+            <div className="space-y-6">
+              {reportData.detailed_log.map((logItem, idx) => (
+                <div key={idx} className="glass-panel p-6 rounded-3xl border border-white/5 space-y-4">
+                  <div className="flex items-start gap-3 border-b border-white/10 pb-4">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-bold text-sm">Q{logItem.question_number}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-dark-muted font-semibold uppercase tracking-wider mb-1">AI Interviewer ({logItem.skill})</p>
+                      <p className="text-white text-base leading-relaxed">{logItem.question}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 border-b border-white/10 pb-4">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                       <span className="text-slate-300 font-bold text-sm">A</span>
+                    </div>
+                    <div className="w-full">
+                       <p className="text-xs text-dark-muted font-semibold uppercase tracking-wider mb-1">Your Answer</p>
+                       <p className="text-slate-300 text-sm leading-relaxed italic border-l-2 border-white/20 pl-4 py-1">{logItem.answer}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 pl-11">
+                    <div className="flex items-center gap-2 mb-2">
+                       <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Evaluation Score:</span>
+                       <span className="text-sm font-bold text-white bg-emerald-500/20 px-2 py-0.5 rounded">{Math.round((logItem.evaluation?.score || 0) * 10)} / 100</span>
+                    </div>
+                    {logItem.evaluation?.improvements && (
+                      <p className="text-sm text-cyan-200 leading-relaxed mt-1">
+                         <span className="font-semibold text-cyan-400">Feedback:</span> {logItem.evaluation.improvements}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

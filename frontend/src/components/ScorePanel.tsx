@@ -1,3 +1,6 @@
+/**
+ * Props for the continuous rolling score metrics.
+ */
 interface ScorePanelProps {
   technical: number;
   depth: number;
@@ -5,6 +8,12 @@ interface ScorePanelProps {
   confidence: number;
 }
 
+/**
+ * ScorePanel Component
+ * 
+ * Renders real-time, animated progress bars showing the candidate's running evaluation
+ * across multiple dimensions, along with an aggregated total score.
+ */
 export default function ScorePanel({ technical, depth, clarity, confidence }: ScorePanelProps) {
   const scores = [
     { label: 'Technical Accuracy', value: technical, color: 'bg-primary shadow-[0_0_10px_rgba(59,130,246,0.6)]' },

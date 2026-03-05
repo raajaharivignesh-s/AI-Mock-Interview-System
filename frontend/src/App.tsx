@@ -1,3 +1,9 @@
+/**
+ * App.tsx
+ * 
+ * Root component that sets up the React Router and defines the navigation
+ * paths for the entire AI Mock Interview application.
+ */
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import JobDescription from './pages/JobDescription';
@@ -5,6 +11,9 @@ import Upload from './pages/Upload';
 import Interview from './pages/Interview';
 import Report from './pages/Report';
 
+/**
+ * App component initializing application routing.
+ */
 function App() {
   return (
     <Router>

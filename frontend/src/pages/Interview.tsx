@@ -1,3 +1,11 @@
+/**
+ * pages/Interview.tsx
+ * 
+ * Step 3 of the interview flow. The core interactive page where the user is asked
+ * AI-generated technical questions based on their resume and JD.
+ * Manages complex state including real-time audio playback, continuous microphone
+ * recording, transcription verification, and dynamic progress tracking.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, TrendingUp, HelpCircle } from 'lucide-react';
@@ -6,12 +14,17 @@ import AudioRecorder from '../components/AudioRecorder';
 import ScorePanel from '../components/ScorePanel';
 import { api, SubmitAnswerResponse } from '../services/api';
 
+/**
+ * Main Interactive Interview Component
+ */
 export default function Interview() {
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState('Generating question...');
   const [questionNumber, setQuestionNumber] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [pendingTranscript, setPendingTranscript] = useState<string>('');
   const audioContextRef = useRef<HTMLAudioElement | null>(null);
   const [scores, setScores] = useState({
     technical: 0,
@@ -25,7 +38,10 @@ export default function Interview() {
   const [latestScore, setLatestScore] = useState(0);
   const [lastTranscript, setLastTranscript] = useState<string>('');
 
-  // Audio Playback Helper
+  /**
+   * Helper function: Plays Base64-encoded audio returned from the backend (OpenAI TTS).
+   * Automatically interrupts any currently playing audio explicitly.
+   */
   const playAudio = (base64String: string) => {
     if (audioContextRef.current) {
         audioContextRef.current.pause();
@@ -51,16 +67,38 @@ export default function Interview() {
     };
   }, []);
 
+  /**
+   * Primary callback when the user stops recording an answer.
+   * Transmits the audio blob to the backend for Whisper transcription.
+   */
   const handleRecordingComplete = async (audioBlob: Blob) => {
     setIsProcessing(true);
     setShowImprovement(false);
 
     try {
       const sessionId = localStorage.getItem('sessionId') || undefined;
-      const response: SubmitAnswerResponse = await api.submitAnswer(audioBlob, sessionId);
-
+      const transResponse = await api.transcribeAudio(audioBlob, sessionId);
+      
+      setPendingTranscript(transResponse.transcript);
+      setIsVerifying(true);
       setIsProcessing(false);
-      setIsThinking(true);
+    } catch (error) {
+      console.error('Error transcribing answer:', error);
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * Triggered when the user confirms their text transcript.
+   * Dispatches the answer to the backend LLM for evaluation and generates the *next* response.
+   */
+  const submitVerifiedAnswer = async () => {
+    setIsVerifying(false);
+    setIsThinking(true);
+
+    try {
+      const sessionId = localStorage.getItem('sessionId') || undefined;
+      const response: SubmitAnswerResponse = await api.submitAnswer(pendingTranscript, sessionId);
 
       setTimeout(() => {
         setScores({
@@ -76,14 +114,13 @@ export default function Interview() {
 
         setImprovement(response.improvement);
         setShowImprovement(true);
-        if (response.transcript) {
-            setLastTranscript(response.transcript);
-        }
+        setLastTranscript(pendingTranscript);
 
         setTimeout(() => {
           setCurrentQuestion(response.next_question);
           setQuestionNumber((prev) => prev + 1);
           setIsThinking(false);
+          setPendingTranscript('');
           
           if (response.audio_base64) {
              playAudio(response.audio_base64);
@@ -91,8 +128,8 @@ export default function Interview() {
         }, 1500);
       }, 1500);
     } catch (error) {
-      console.error('Error submitting answer:', error);
-      setIsProcessing(false);
+      console.error('Error submitting verified answer:', error);
+      setIsThinking(false);
     }
   };
 
@@ -148,8 +185,37 @@ export default function Interview() {
           </div>
 
           {/* Action / Recording Area */}
-          <div className="glass-panel p-6 rounded-3xl flex justify-center animate-fade-in-up border-t border-white/10">
-            <AudioRecorder onRecordingComplete={handleRecordingComplete} isProcessing={isProcessing} />
+          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-center animate-fade-in-up border-t border-white/10 min-h-[200px]">
+            {isVerifying ? (
+              <div className="w-full flex flex-col space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between mb-2">
+                   <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Verify Transcription</h3>
+                </div>
+                <textarea
+                  className="w-full bg-dark-bg/50 text-white rounded-xl border border-white/10 p-4 min-h-[100px] outline-none focus:border-primary/50 transition-colors resize-none"
+                  value={pendingTranscript}
+                  onChange={(e) => setPendingTranscript(e.target.value)}
+                  placeholder="Review and edit your answer before submitting..."
+                />
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => { setIsVerifying(false); setPendingTranscript(''); }}
+                    className="btn-secondary text-sm"
+                  >
+                    Retake
+                  </button>
+                  <button
+                    onClick={submitVerifiedAnswer}
+                    disabled={!pendingTranscript.trim() || isThinking}
+                    className="btn-primary text-sm"
+                  >
+                    Confirm & Submit
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <AudioRecorder onRecordingComplete={handleRecordingComplete} isProcessing={isProcessing} />
+            )}
           </div>
           
            {/* Improvement Tip Ribbon */}
