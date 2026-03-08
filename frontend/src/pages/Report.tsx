@@ -11,9 +11,11 @@ import { Download, Home, TrendingUp, Award } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, ReportData } from '../services/api';
 import jsPDF from "jspdf";
+
 /**
  * Final Feedback and Analytics Dashboard
  */
+
 export default function Report() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ export default function Report() {
    * Auto-generates a formatted plain-text file combining scores and qualitative feedback
    * for the candidate to download directly entirely on the client-side.
    */
+
   const handleDownload = () => {
   if (!reportData) return;
 
@@ -83,7 +86,7 @@ export default function Report() {
   doc.text("Areas for Improvement:", 20, y);
   y += 8;
 
-  (reportData.improvements || []).forEach((i) => {
+  (reportData.improvement || []).forEach((i) => {
     doc.text(`• ${i}`, 25, y);
     y += 7;
   });
@@ -212,6 +215,7 @@ export default function Report() {
           {[
             { label: 'Overall Score', value: reportData.overall_score, icon: Award, color: 'text-white border-white/20', bg: 'bg-white/10' },
             { label: 'Technical', value: reportData.technical, icon: TrendingUp, color: 'text-primary border-primary/30', bg: 'bg-primary/10' },
+            { label: 'Response', value: reportData.depth, icon: TrendingUp, color: 'text-amber-400 border-amber-400/30', bg: 'bg-amber-500/10' },
             { label: 'Communication', value: reportData.clarity, icon: TrendingUp, color: 'text-cyan-400 border-cyan-400/30', bg: 'bg-cyan-500/10' },
             { label: 'Confidence', value: reportData.confidence, icon: TrendingUp, color: 'text-emerald-400 border-emerald-400/30', bg: 'bg-emerald-500/10' },
           ].map((stat, idx) => (
@@ -297,7 +301,7 @@ export default function Report() {
               Focus Areas
             </h3>
             <ul className="space-y-4">
-              {(reportData.improvements || [
+              {(reportData.improvement || [
                 'Provide more specific examples',
                 'Expand on technical details',
                 'Structure answers more clearly',

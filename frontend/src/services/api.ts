@@ -32,12 +32,12 @@ export interface SubmitAnswerResponse {
 
 export interface ReportData {
   overall_score: number;
-  technical_accuracy: number;
-  response_depth: number;
-  clarity_structure: number;
-  confidence_tone: number;
+  technical: number;
+  depth: number;
+  clarity: number;
+  confidence: number;
   skills_analysis: Array<{ skill: string; score: number }>;
-  improvements: string[];
+  improvement: string[];
   strengths: string[];
   detailed_log?: Array<{
     question_number: number;
