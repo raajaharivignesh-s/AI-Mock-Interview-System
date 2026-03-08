@@ -219,8 +219,7 @@ async def submit_answer(
 
     # Evaluate the transcribed answer
     evaluation = await evaluation_service.evaluate_answer(state)
-    score_0_10 = evaluation.get("score", 0)
-    score_100 = min(100, max(0, int(score_0_10 * 10))) # Scale out of 100
+    score_100 = evaluation.get("overall_rating", 0) # Scale out of 100
     
     state.add_score(score_100)
 
@@ -248,15 +247,15 @@ async def submit_answer(
             print("Failed to generate TTS:", e)
 
     return {
-        "final_score": score_100,
-        "technical": score_100,
-        "depth": score_100,
-        "clarity": score_100,
-        "confidence": score_100,
-        "improvement": evaluation.get("improvements", "Keep providing specific examples."),
-        "next_question": next_question or "Thank you, the interview is complete.",
-        "audio_base64": audio_base64
-    }
+    "final_score": score_100,
+    "technical": evaluation.get("technical", 0),
+    "depth": evaluation.get("depth", 0),
+    "clarity": evaluation.get("clarity", 0),
+    "confidence": evaluation.get("confidence", 0),
+    "improvement": evaluation.get("improvements", "Keep providing specific examples."),
+    "next_question": next_question or "Thank you, the interview is complete.",
+    "audio_base64": audio_base64
+}
 
 
 @app.get("/generate-report")

@@ -32,10 +32,10 @@ export interface SubmitAnswerResponse {
 
 export interface ReportData {
   overall_score: number;
-  technical: number;
-  depth: number;
-  clarity: number;
-  confidence: number;
+  technical_accuracy: number;
+  response_depth: number;
+  clarity_structure: number;
+  confidence_tone: number;
   skills_analysis: Array<{ skill: string; score: number }>;
   improvements: string[];
   strengths: string[];
@@ -72,6 +72,7 @@ export const api = {
    * Uploads the candidate's parsed resume buffer to attach it to the session.
    * Returns the initial interview question and its synthesized audio.
    */
+  
   async uploadResume(file: File, sessionId?: string): Promise<ResumeUploadResponse> {
     const formData = new FormData();
     formData.append('file', file);

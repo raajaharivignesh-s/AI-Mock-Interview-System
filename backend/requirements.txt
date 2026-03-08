@@ -8,3 +8,4 @@ PyPDF2
 httpx
 pdfminer.six
 python-docx
+

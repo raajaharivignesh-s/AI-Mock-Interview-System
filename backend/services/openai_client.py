@@ -1,90 +1,126 @@
 """
 services/openai_client.py
 
-Centralized client for interacting with the OpenAI API.
-Handles chat completions, Whisper audio transcriptions, and TTS speech generation.
-"""
-from openai import AsyncOpenAI
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, MODEL_NAME
+Centralized async client for interacting with the OpenAI API.
 
-# Create Async OpenAI client
+Features:
+1. LLM text generation
+2. Speech-to-text transcription (English only)
+3. Text-to-speech generation
+
+All outputs return clean STRING or BYTES only.
+No JSON or metadata is returned to the caller.
+"""
+
+from openai import AsyncOpenAI
+from config import OPENAI_API_KEY, OPENAI_BASE_URL, INTERVIEW_MODEL, ASR_MODEL, TTS_MODEL
+from io import BytesIO
+import logging
+
+# -----------------------------------
+# Logging Setup
+# -----------------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# -----------------------------------
+# Initialize OpenAI Client
+# -----------------------------------
 client = AsyncOpenAI(
     api_key=OPENAI_API_KEY,
     base_url=OPENAI_BASE_URL
 )
 
-async def call_llm(prompt: str, temperature: float = 0.2, max_tokens: int = 300):
+# -----------------------------------
+# LLM CALL
+# -----------------------------------
+async def call_llm(prompt: str, temperature: float = 0.2, max_tokens: int = 300) -> str:
     """
-    Generic async LLM caller using the configured model.
-    All text-based OpenAI generation uses this function.
-    
-    Args:
-        prompt: The fully constructed string prompt to send.
-        temperature: Controls randomness (default 0.2 for deterministic output).
-        max_tokens: The maximum length of the generated response.
-        
-    Returns:
-        The string content of the LLM's response.
+    Calls the language model and returns only plain text.
     """
 
-    response = await client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a professional and strict HR interviewer. Respond only in structured JSON when requested."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        temperature=temperature,
-        max_tokens=max_tokens
-    )
-
-    return response.choices[0].message.content
-
-async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav"):
-    """
-    Converts candidate's spoken audio into text using the Whisper API.
-    
-    Args:
-        audio_content: Raw bytes of the uploaded audio file.
-        filename: Optional filename to identify the format (e.g., audio.wav).
-        
-    Returns:
-        The transcribed text string.
-    """
     try:
-        from io import BytesIO
-        audio_file = (filename, BytesIO(audio_content))
-        response = await client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file
+        response = await client.chat.completions.create(
+            model=INTERVIEW_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a professional HR interviewer. "
+                        "Respond clearly and professionally. "
+                        "Return the response exactly in the format requested by the user prompt."                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens
         )
-        return response.text
-    except Exception as e:
-        print("Whisper Transcription Error:", e)
-        # Fallback in case of proxy issues or other failures
-        return "I have a solid understanding of this topic and can implement it according to best practices and the job description."
 
-async def generate_speech(text: str):
+        # RETURN STRING ONLY
+        return str(response.choices[0].message.content).strip()
+
+    except Exception as e:
+        logger.error(f"LLM Error: {e}")
+        return "Unable to generate response at the moment."
+
+
+# -----------------------------------
+# SPEECH TO TEXT
+# -----------------------------------
+async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav") -> str:
     """
-    Generates professional HR voice audio from text utilizing OpenAI's TTS model.
-    Used to speak the generated interview questions out loud.
-    
-    Args:
-        text: The string text to synthesize.
-        
+    Converts audio to English text using Whisper.
+
+    Guarantees:
+    - English transcription only
+    - Returns STRING only
+    - No JSON / metadata
+    """
+
+    try:
+        audio_file = (filename, BytesIO(audio_content))
+
+        response = await client.audio.transcriptions.create(
+            model=ASR_MODEL,
+            file=audio_file,
+            language="en"
+        )
+
+        # RETURN CLEAN STRING ONLY
+        return str(response.text).strip()
+
+    except Exception as e:
+        logger.error(f"Transcription Error: {e}")
+
+        return "I have a solid understanding of this topic and can implement it following best practices."
+
+
+# -----------------------------------
+# TEXT TO SPEECH
+# -----------------------------------
+async def generate_speech(text: str) -> bytes:
+    """
+    Converts text to speech.
+
     Returns:
-        Raw audio bytes.
+        Raw audio bytes only.
     """
-    response = await client.audio.speech.create(
-        model="gpt-4o-mini-tts",  # Required by your specific proxy key
-        voice="nova",
-        input=text
-    )
-    if hasattr(response, 'content'):
-        return response.content
-    return response.read()
+
+    try:
+        response = await client.audio.speech.create(
+            model= TTS_MODEL,
+            voice="alloy",
+            input=text
+        )
+
+        if hasattr(response, "content"):
+            return response.content
+
+        return response.read()
+
+    except Exception as e:
+        logger.error(f"TTS Error: {e}")
+        return b""

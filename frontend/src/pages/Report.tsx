@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { Download, Home, TrendingUp, Award } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, ReportData } from '../services/api';
-
+import jsPDF from "jspdf";
 /**
  * Final Feedback and Analytics Dashboard
  */
@@ -40,33 +40,103 @@ export default function Report() {
    * for the candidate to download directly entirely on the client-side.
    */
   const handleDownload = () => {
-    const content = `
-AI Mock Interview Report
-========================
+  if (!reportData) return;
 
-Overall Score: ${reportData?.overall_score}/100
+  const doc = new jsPDF();
 
-Performance Breakdown:
-- Technical: ${reportData?.technical}/100
-- Depth: ${reportData?.depth}/100
-- Clarity: ${reportData?.clarity}/100
-- Confidence: ${reportData?.confidence}/100
+  let y = 20;
 
-Strengths:
-${reportData?.strengths.map(s => `- ${s}`).join('\n')}
+  // Title
+  doc.setFontSize(20);
+  doc.text("AI Mock Interview Report", 20, y);
 
-Areas for Improvement:
-${reportData?.improvements.map(i => `- ${i}`).join('\n')}
-    `.trim();
+  y += 12;
+  doc.setFontSize(12);
+  doc.text(`Overall Score: ${reportData.overall_score}/100`, 20, y);
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'interview-report.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  y += 12;
+  doc.text("Performance Breakdown:", 20, y);
+
+  y += 8;
+  doc.text(`Technical: ${reportData.technical}/100`, 25, y);
+  y += 7;
+  doc.text(`Depth: ${reportData.depth}/100`, 25, y);
+  y += 7;
+  doc.text(`Clarity: ${reportData.clarity}/100`, 25, y);
+  y += 7;
+  doc.text(`Confidence: ${reportData.confidence}/100`, 25, y);
+
+  y += 12;
+
+  // Strengths
+  doc.text("Key Strengths:", 20, y);
+  y += 8;
+
+  (reportData.strengths || []).forEach((s) => {
+    doc.text(`• ${s}`, 25, y);
+    y += 7;
+  });
+
+  y += 8;
+
+  // Improvements
+  doc.text("Areas for Improvement:", 20, y);
+  y += 8;
+
+  (reportData.improvements || []).forEach((i) => {
+    doc.text(`• ${i}`, 25, y);
+    y += 7;
+  });
+
+  // Transcript
+  if (reportData.detailed_log && reportData.detailed_log.length > 0) {
+    doc.addPage();
+    y = 20;
+
+    doc.setFontSize(16);
+    doc.text("Full Interview Transcript & Feedback", 20, y);
+
+    y += 10;
+    doc.setFontSize(11);
+
+    reportData.detailed_log.forEach((log) => {
+
+      doc.text(`Q${log.question_number}: ${log.question}`, 20, y);
+      y += 7;
+
+      const answerLines = doc.splitTextToSize(`Answer: ${log.answer}`, 170);
+      doc.text(answerLines, 20, y);
+      y += answerLines.length * 6;
+
+      doc.text(
+        `Score: ${Math.round((log.evaluation?.score || 0) * 10)} / 100`,
+        20,
+        y
+      );
+
+      y += 6;
+
+      if (log.evaluation?.improvements) {
+        const feedbackLines = doc.splitTextToSize(
+          `Feedback: ${log.evaluation.improvements}`,
+          170
+        );
+
+        doc.text(feedbackLines, 20, y);
+        y += feedbackLines.length * 6;
+      }
+
+      y += 10;
+
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+  }
+
+  doc.save("interview-report.pdf");
+};
 
   if (loading) {
     return (

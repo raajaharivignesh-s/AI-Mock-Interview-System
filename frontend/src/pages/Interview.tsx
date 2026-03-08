@@ -37,11 +37,13 @@ export default function Interview() {
   const [showScorePopup, setShowScorePopup] = useState(false);
   const [latestScore, setLatestScore] = useState(0);
   const [lastTranscript, setLastTranscript] = useState<string>('');
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   /**
    * Helper function: Plays Base64-encoded audio returned from the backend (OpenAI TTS).
    * Automatically interrupts any currently playing audio explicitly.
    */
+
   const playAudio = (base64String: string) => {
     if (audioContextRef.current) {
         audioContextRef.current.pause();
@@ -66,6 +68,14 @@ export default function Interview() {
         if (audioContextRef.current) audioContextRef.current.pause();
     };
   }, []);
+
+  useEffect(() => {
+  const timer = setInterval(() => {
+    setElapsedTime((prev) => prev + 1);
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, []);
 
   /**
    * Primary callback when the user stops recording an answer.
@@ -99,17 +109,18 @@ export default function Interview() {
     try {
       const sessionId = localStorage.getItem('sessionId') || undefined;
       const response: SubmitAnswerResponse = await api.submitAnswer(pendingTranscript, sessionId);
+      console.log("SUBMIT ANSWER RESPONSE:", response);
 
       setTimeout(() => {
-        setScores({
-          technical: response.technical,
-          depth: response.depth,
-          clarity: response.clarity,
-          confidence: response.confidence,
-        });
+    setScores({
+  technical: response.technical,
+  depth: response.depth,
+  clarity: response.clarity,
+  confidence: response.confidence,
+});
 
-        setLatestScore(response.final_score);
-        setShowScorePopup(true);
+setLatestScore(response.final_score);       
+setShowScorePopup(true);
         setTimeout(() => setShowScorePopup(false), 3000);
 
         setImprovement(response.improvement);
@@ -137,6 +148,17 @@ export default function Interview() {
     navigate('/report');
   };
 
+  const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const secs = (seconds % 60)
+    .toString()
+    .padStart(2, '0');
+
+  return `${mins}:${secs}`;
+};
+
   return (
     <div className="min-h-screen bg-dark-bg flex flex-col relative overflow-hidden">
         {/* Subtle background glow */}
@@ -148,8 +170,8 @@ export default function Interview() {
              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
              <span className="text-white font-medium tracking-wide">Live Demo Session</span>
              <span className="text-dark-muted mx-2">|</span>
-             <span className="text-dark-muted font-mono bg-white/5 px-2 py-1 rounded">00:15:34</span>
-          </div>
+            <span className="text-dark-muted font-mono bg-white/5 px-2 py-1 rounded">{formatTime(elapsedTime)}</span>          
+            </div>
 
           <button
             onClick={endInterview}

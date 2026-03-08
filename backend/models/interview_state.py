@@ -29,7 +29,7 @@ class InterviewState:
 
         # Performance
         self.scores = []
-
+        self.evaluations = []
         # Full detailed log
         self.interview_log = []
 
