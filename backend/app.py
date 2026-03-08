@@ -278,6 +278,24 @@ async def get_report(session_id: str = None):
     report = generate_report(state)
     avg_score = report.get("average_score", 0)
 
+    # Build per-topic score breakdown from the detailed log
+    detailed_log = report.get("detailed_log", [])
+    topic_scores = {}   # {skill: [scores]}
+    topic_order = []    # preserve first-seen order
+
+    for entry in detailed_log:
+        skill = entry.get("skill") or "General"
+        rating = entry.get("evaluation", {}).get("overall_rating", 0)
+        if skill not in topic_scores:
+            topic_scores[skill] = []
+            topic_order.append(skill)
+        topic_scores[skill].append(rating)
+
+    skills_analysis = [
+        {"skill": skill, "score": round(sum(topic_scores[skill]) / len(topic_scores[skill]), 1)}
+        for skill in topic_order
+    ]
+
     # Convert generic report into the detailed Radar/Bar chart format expected by frontend
     return {
     "overall_score": report.get("overall_score", 0),
@@ -285,13 +303,10 @@ async def get_report(session_id: str = None):
     "depth": report.get("depth", 0),
     "clarity": report.get("clarity", 0),
     "confidence": report.get("confidence", 0),
-    "skills_analysis": [
-        {"skill": s, "score": report.get("technical", 0)}  # or map each skill separately if available
-        for s in report.get("covered_skills", [])
-    ],
+    "skills_analysis": skills_analysis,
     "improvements": report.get("improvements", []),
     "strengths": report.get("strengths", []),
-    "detailed_log": report.get("detailed_log", [])
+    "detailed_log": detailed_log
 }
 
 # -----------------------------

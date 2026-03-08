@@ -86,7 +86,7 @@ export default function Report() {
   doc.text("Areas for Improvement:", 20, y);
   y += 8;
 
-  (reportData.improvement || []).forEach((i) => {
+  (reportData.improvements || []).forEach((i: string) => {
     doc.text(`• ${i}`, 25, y);
     y += 7;
   });
@@ -112,7 +112,7 @@ export default function Report() {
       y += answerLines.length * 6;
 
       doc.text(
-        `Score: ${Math.round((log.evaluation?.score || 0) * 10)} / 100`,
+        `Score: ${log.evaluation?.overall_rating || 0} / 100`,
         20,
         y
       );
@@ -172,14 +172,19 @@ export default function Report() {
     );
   }
 
+  // 2. Skills Consistency Radar Chart matches Score Cards exactly
   const radarData = [
+    { skill: 'Overall Score', score: reportData.overall_score },
     { skill: 'Technical', score: reportData.technical },
-    { skill: 'Depth', score: reportData.depth },
-    { skill: 'Clarity', score: reportData.clarity },
+    { skill: 'Response', score: reportData.depth },
+    { skill: 'Communication', score: reportData.clarity },
     { skill: 'Confidence', score: reportData.confidence },
   ];
 
-  const barData = reportData.skills_analysis || radarData.map(d => ({ skill: d.skill, score: d.score }));
+  // 3. Detailed Breakdown uses the dynamic topic scores from the backend
+  const barData = reportData.skills_analysis && reportData.skills_analysis.length > 0
+    ? reportData.skills_analysis 
+    : radarData.slice(1); // fallback to rubrics if no topics
 
   return (
     <div className="min-h-screen bg-dark-bg py-12 px-4 relative overflow-hidden">
@@ -187,7 +192,7 @@ export default function Report() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-glow rounded-full blur-[150px] opacity-10 pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-glow rounded-full blur-[150px] opacity-10 pointer-events-none" />
 
-      <div className="container mx-auto max-w-6xl space-y-8 relative z-10">
+      <div className="container mx-auto max-w-7xl space-y-10 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-fade-in-up">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 tracking-tight">Interview Report</h1>
@@ -211,7 +216,8 @@ export default function Report() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+        {/* 1. Score Cards - 5 column responsive grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           {[
             { label: 'Overall Score', value: reportData.overall_score, icon: Award, color: 'text-white border-white/20', bg: 'bg-white/10' },
             { label: 'Technical', value: reportData.technical, icon: TrendingUp, color: 'text-primary border-primary/30', bg: 'bg-primary/10' },
@@ -221,15 +227,17 @@ export default function Report() {
           ].map((stat, idx) => (
             <div
               key={idx}
-              className="glass-panel p-6 rounded-2xl hover:bg-white/5 transition-all duration-300"
+              className="glass-panel p-6 rounded-2xl hover:bg-white/5 transition-all duration-300 flex flex-col justify-between h-full"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className={`p-2.5 rounded-xl border ${stat.bg} ${stat.color}`}>
+                <div className={`p-2.5 rounded-xl border flex-shrink-0 ${stat.bg} ${stat.color}`}>
                   <stat.icon className="w-5 h-5" />
                 </div>
-                <span className="text-sm text-dark-muted font-semibold uppercase tracking-wider">{stat.label}</span>
+                <span className="text-sm text-dark-muted font-semibold uppercase tracking-wider leading-tight">{stat.label}</span>
               </div>
-              <p className="text-4xl font-bold text-white tracking-tight">{stat.value}<span className="text-xl text-dark-muted font-medium">/100</span></p>
+              <div className="mt-auto">
+                <p className="text-4xl font-bold text-white tracking-tight">{stat.value}<span className="text-xl text-dark-muted font-medium">/100</span></p>
+              </div>
             </div>
           ))}
         </div>
@@ -253,9 +261,15 @@ export default function Report() {
             <h3 className="text-lg font-bold text-white tracking-wide mb-8 uppercase text-center md:text-left">Detailed Breakdown</h3>
             <div className="h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="skill" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <XAxis 
+                      dataKey="skill" 
+                      tick={{ fill: '#94a3b8', fontSize: 12 }} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      interval={0}
+                    />
                     <YAxis domain={[0, 100]} tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <Tooltip
                     contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid #334155', borderRadius: '12px', color: '#fff', backdropFilter: 'blur(8px)' }}
@@ -301,7 +315,7 @@ export default function Report() {
               Focus Areas
             </h3>
             <ul className="space-y-4">
-              {(reportData.improvement || [
+              {(reportData.improvements || [
                 'Provide more specific examples',
                 'Expand on technical details',
                 'Structure answers more clearly',
@@ -345,7 +359,7 @@ export default function Report() {
                   <div className="pt-2 pl-11">
                     <div className="flex items-center gap-2 mb-2">
                        <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Evaluation Score:</span>
-                       <span className="text-sm font-bold text-white bg-emerald-500/20 px-2 py-0.5 rounded">{Math.round((logItem.evaluation?.score || 0) * 10)} / 100</span>
+                       <span className="text-sm font-bold text-white bg-emerald-500/20 px-2 py-0.5 rounded">{logItem.evaluation?.overall_rating || 0} / 100</span>
                     </div>
                     {logItem.evaluation?.improvements && (
                       <p className="text-sm text-cyan-200 leading-relaxed mt-1">

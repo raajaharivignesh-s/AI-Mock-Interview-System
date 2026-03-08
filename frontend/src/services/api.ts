@@ -37,14 +37,14 @@ export interface ReportData {
   clarity: number;
   confidence: number;
   skills_analysis: Array<{ skill: string; score: number }>;
-  improvement: string[];
+  improvements: string[];
   strengths: string[];
   detailed_log?: Array<{
     question_number: number;
     skill: string;
     question: string;
     answer: string;
-    evaluation: { score?: number; improvements?: string; [key: string]: unknown };
+    evaluation: { overall_rating?: number; improvements?: string; [key: string]: unknown };
   }>;
 }
 

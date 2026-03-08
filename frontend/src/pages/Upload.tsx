@@ -197,34 +197,23 @@ export default function Upload() {
                 </div>
               </div>
 
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xs font-semibold text-dark-muted uppercase tracking-wider mb-4">
-                    Extracted Experience Level
-                  </h3>
-                  <div className="inline-flex px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-medium">
-                      {uploadData.experience_level || "Professional"}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-semibold text-dark-muted uppercase tracking-wider mb-4">
-                    Key Skills Match
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {uploadData.skills.length > 0 ? (
-                        uploadData.skills.map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-blue-300 text-sm font-medium"
-                          >
-                            {skill}
-                          </span>
-                        ))
-                    ) : (
-                        <span className="text-dark-muted text-sm italic">Analysis complete. Ready for interview.</span>
-                    )}
-                  </div>
+              <div>
+                <h3 className="text-xs font-semibold text-dark-muted uppercase tracking-wider mb-4">
+                  Key Skills Match
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {uploadData.skills.length > 0 ? (
+                      uploadData.skills.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20 text-blue-300 text-sm font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))
+                  ) : (
+                      <span className="text-dark-muted text-sm italic">Analysis complete. Ready for interview.</span>
+                  )}
                 </div>
               </div>
             </div>
