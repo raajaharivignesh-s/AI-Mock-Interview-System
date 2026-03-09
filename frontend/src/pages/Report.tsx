@@ -259,16 +259,51 @@ export default function Report() {
 
           <div className="glass-panel p-8 rounded-3xl">
             <h3 className="text-lg font-bold text-white tracking-wide mb-8 uppercase text-center md:text-left">Detailed Breakdown</h3>
-            <div className="h-[350px]">
+            <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 60 }}>
+                <BarChart data={barData} margin={{ top: 10, right: 30, left: -20, bottom: 80 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                     <XAxis 
                       dataKey="skill" 
-                      tick={{ fill: '#94a3b8', fontSize: 12 }} 
+                      tick={(props: any) => {
+                          const { x, y, payload } = props;
+                          // Break long skill names down into 2-3 lines
+                          const words = payload.value.split(/(?=[A-Z(])|\s+/);
+                          const lines = [];
+                          let currentLine = "";
+                          
+                          for (let i = 0; i < words.length; i++) {
+                              if ((currentLine + " " + words[i]).length > 15 && currentLine !== "") {
+                                  lines.push(currentLine.trim());
+                                  currentLine = words[i];
+                              } else {
+                                  currentLine += (currentLine ? " " : "") + words[i];
+                              }
+                          }
+                          if (currentLine) lines.push(currentLine.trim());
+
+                          return (
+                              <g transform={`translate(${x},${y})`}>
+                                  {lines.slice(0, 3).map((line, index) => (
+                                      <text
+                                          key={index}
+                                          x={0}
+                                          y={15 + index * 12}
+                                          dy={0}
+                                          textAnchor="middle"
+                                          fill="#94a3b8"
+                                          fontSize={11}
+                                      >
+                                          {line + (index === 2 && lines.length > 3 ? "..." : "")}
+                                      </text>
+                                  ))}
+                              </g>
+                          );
+                      }}
                       axisLine={false} 
                       tickLine={false} 
                       interval={0}
+                      height={60}
                     />
                     <YAxis domain={[0, 100]} tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <Tooltip
@@ -276,7 +311,7 @@ export default function Report() {
                     itemStyle={{ color: '#fff' }}
                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     />
-                    <Bar dataKey="score" fill="url(#colorGradient)" radius={[6, 6, 0, 0]} maxBarSize={50} />
+                    <Bar dataKey="score" fill="url(#colorGradient)" radius={[6, 6, 0, 0]} maxBarSize={40} />
                     <defs>
                     <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#3b82f6" />
@@ -338,7 +373,7 @@ export default function Report() {
                 <div key={idx} className="glass-panel p-6 rounded-3xl border border-white/5 space-y-4">
                   <div className="flex items-start gap-3 border-b border-white/10 pb-4">
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                      <span className="text-primary font-bold text-sm">Q{logItem.question_number}</span>
+                      <span className="text-primary font-bold text-sm">Q{idx + 1}</span>
                     </div>
                     <div>
                       <p className="text-xs text-dark-muted font-semibold uppercase tracking-wider mb-1">AI Interviewer ({logItem.skill})</p>

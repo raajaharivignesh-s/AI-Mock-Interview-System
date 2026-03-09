@@ -82,6 +82,9 @@ export default function Upload() {
       if (data.first_audio) {
         localStorage.setItem('firstAudio', data.first_audio);
       }
+      if (data.tts_duration !== undefined) {
+        localStorage.setItem('firstTtsDuration', data.tts_duration.toString());
+      }
       
     } catch (error) {
       console.error('Upload error:', error);

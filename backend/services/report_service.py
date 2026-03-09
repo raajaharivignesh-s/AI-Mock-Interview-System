@@ -6,7 +6,41 @@ def generate_report(state):
     Aggregates scores, strengths, improvements, and logs.
     """
     detailed_log = getattr(state, "interview_log", [])
-    total_questions = max(state.total_questions, 1)
+    
+    # Check if there is a pending question that was asked but not answered
+    # due to premature termination of the interview
+    if hasattr(state, "previous_question") and state.previous_question:
+        pending_question = state.previous_question
+        pending_skill = getattr(state, "current_skill", "General")
+        
+        # Determine if this question is already in the log
+        # If the last logged question matches this one, it was answered
+        last_logged_q = detailed_log[-1].get("question") if detailed_log else None
+        
+        if last_logged_q != pending_question:
+            # Create a zeroed-out evaluation entry for the unanswered question
+            termination_entry = {
+                "question_number": len(detailed_log) + 1,
+                "skill": pending_skill,
+                "question": pending_question,
+                "answer": "[Interview terminated by user before answering]",
+                "evaluation": {
+                    "technical": 0,
+                    "depth": 0,
+                    "clarity": 0,
+                    "confidence": 0,
+                    "technical_accuracy": 0,
+                    "response_depth": 0,
+                    "clarity_structure": 0,
+                    "confidence_tone": 0,
+                    "overall_rating": 0,
+                    "strengths": "",
+                    "improvements": "No answer provided. Candidate terminated the interview."
+                }
+            }
+            detailed_log = detailed_log + [termination_entry]
+
+    total_questions = len(detailed_log) if detailed_log else max(state.total_questions, 1)
 
     # Initialize sums
     total_tech = total_depth = total_clarity = total_confidence = 0

@@ -16,6 +16,7 @@ from openai import AsyncOpenAI
 from config import OPENAI_API_KEY, OPENAI_BASE_URL, INTERVIEW_MODEL, ASR_MODEL, TTS_MODEL
 from io import BytesIO
 import logging
+import time
 
 # -----------------------------------
 # Logging Setup
@@ -79,6 +80,7 @@ async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav") ->
     - Returns STRING only
     - No JSON / metadata
     """
+    start_time = time.time()
 
     try:
         audio_file = (filename, BytesIO(audio_content))
@@ -88,14 +90,15 @@ async def transcribe_audio(audio_content: bytes, filename: str = "audio.wav") ->
             file=audio_file,
             language="en"
         )
-
-        # RETURN CLEAN STRING ONLY
-        return str(response.text).strip()
+        duration = time.time() - start_time
+        logger.info(f"Transcription completed in {duration:.2f} seconds")
+        # RETURN CLEAN STRING ONLY AND DURATION
+        return str(response.text).strip(), duration
 
     except Exception as e:
         logger.error(f"Transcription Error: {e}")
 
-        return "I have a solid understanding of this topic and can implement it following best practices."
+        return "I have a solid understanding of this topic and can implement it following best practices.", 0.0
 
 
 # -----------------------------------
@@ -108,19 +111,22 @@ async def generate_speech(text: str) -> bytes:
     Returns:
         Raw audio bytes only.
     """
-
+    start_time = time.time()
     try:
         response = await client.audio.speech.create(
             model= TTS_MODEL,
             voice="alloy",
             input=text
         )
+        
+        duration = time.time() - start_time
+        logger.info(f"TTS generation completed in {duration:.2f} seconds")
 
         if hasattr(response, "content"):
-            return response.content
+            return response.content, duration
 
-        return response.read()
+        return response.read(), duration
 
     except Exception as e:
         logger.error(f"TTS Error: {e}")
-        return b""
+        return b"", 0.0

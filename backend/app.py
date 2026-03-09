@@ -134,12 +134,14 @@ async def upload_resume(
         # Generate the first interview question
         question, skill = await interview_service.generate_question(state)
         state.previous_question = question
+        state.current_skill = skill
 
         # Generate audio for the first question
         audio_base64 = None
+        tts_duration = 0.0
         if question:
             try:
-                speech_bytes = await openai_client.generate_speech(question)
+                speech_bytes, tts_duration = await openai_client.generate_speech(question)
                 if speech_bytes:
                     audio_base64 = base64.b64encode(speech_bytes).decode('utf-8')
             except Exception as e:
@@ -151,7 +153,8 @@ async def upload_resume(
             "experience_level": resume_profile.get("experience_years", "Professional"),
             "session_id": session_id,
             "first_question": question,
-            "first_audio": audio_base64
+            "first_audio": audio_base64,
+            "tts_duration": tts_duration
         }
     except PyPDF2.errors.PdfReadError:
         raise HTTPException(status_code=400, detail="Invalid or corrupt PDF file")
@@ -183,13 +186,14 @@ async def transcribe_audio(
     
     try:
         audio_content = await audio.read()
-        answer_text = await openai_client.transcribe_audio(audio_content, audio.filename)
+        answer_text, stt_duration = await openai_client.transcribe_audio(audio_content, audio.filename)
     except Exception as e:
         import traceback
         traceback.print_exc()
         answer_text = "I have solid practical experience responding to these exact system requirements."
+        stt_duration = 0.0
         
-    return {"transcript": answer_text}
+    return {"transcript": answer_text, "stt_duration": stt_duration}
 
 
 @app.post("/submit-answer")
@@ -220,27 +224,33 @@ async def submit_answer(
     # Evaluate the transcribed answer
     evaluation = await evaluation_service.evaluate_answer(state)
     score_100 = evaluation.get("overall_rating", 0) # Scale out of 100
+    evaluation_duration = evaluation.get("evaluation_duration", 0.0)
     
     state.add_score(score_100)
 
+    # Retrieve the correct skill that this evaluation actually belongs to
+    current_skill = state.current_skill if hasattr(state, 'current_skill') else "General"
+    
     # Next question
-    next_question, skill = await interview_service.generate_question(state)
+    next_question, next_skill = await interview_service.generate_question(state)
 
     state.log_interaction(
         question_number=state.total_questions,
-        skill=skill,
+        skill=current_skill,
         question=state.previous_question,
         answer=answer_text,
         evaluation=evaluation
     )
 
     state.previous_question = next_question
+    state.current_skill = next_skill
 
     # Generate audio for the next question
     audio_base64 = None
+    tts_duration = 0.0
     if next_question:
         try:
-            speech_bytes = await openai_client.generate_speech(next_question)
+            speech_bytes, tts_duration = await openai_client.generate_speech(next_question)
             if speech_bytes:
                 audio_base64 = base64.b64encode(speech_bytes).decode('utf-8')
         except Exception as e:
@@ -254,7 +264,9 @@ async def submit_answer(
     "confidence": evaluation.get("confidence", 0),
     "improvement": evaluation.get("improvements", "Keep providing specific examples."),
     "next_question": next_question or "Thank you, the interview is complete.",
-    "audio_base64": audio_base64
+    "audio_base64": audio_base64,
+    "tts_duration": tts_duration,
+    "evaluation_duration": evaluation_duration
 }
 
 

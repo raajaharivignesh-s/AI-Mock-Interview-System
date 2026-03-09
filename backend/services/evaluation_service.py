@@ -85,11 +85,16 @@ Candidate Answer:
 {answer}
 """
 
+    import time
+    start_time = time.time()
+    
     raw_eval = await call_llm(
         prompt=prompt,
         max_tokens=300,
         temperature=0.2
     )
+    
+    evaluation_duration = time.time() - start_time
 
     try:
         print("RAW LLM EVALUATION:", raw_eval)
@@ -126,7 +131,8 @@ Candidate Answer:
     "confidence_tone": confidence,
     "overall_rating": overall_rating,
     "strengths": evaluation.get("strengths", ""),
-    "improvements": evaluation.get("improvements", "")
+    "improvements": evaluation.get("improvements", ""),
+    "evaluation_duration": evaluation_duration
 }
 
     except json.JSONDecodeError:
@@ -139,7 +145,8 @@ Candidate Answer:
             "confidence_tone": 0,
             "overall_rating": 0,
             "strengths": "",
-            "improvements": "Evaluation failed due to JSON parsing error."
+            "improvements": "Evaluation failed due to JSON parsing error.",
+            "evaluation_duration": evaluation_duration
         }
 
         if hasattr(state, "evaluations"):

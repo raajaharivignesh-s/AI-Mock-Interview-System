@@ -13,10 +13,12 @@ export interface ResumeUploadResponse {
   session_id?: string;
   first_question?: string;
   first_audio?: string;
+  tts_duration?: number;
 }
 
 export interface TranscribeAudioResponse {
   transcript: string;
+  stt_duration?: number;
 }
 
 export interface SubmitAnswerResponse {
@@ -28,6 +30,8 @@ export interface SubmitAnswerResponse {
   improvement: string;
   next_question: string;
   audio_base64?: string;
+  tts_duration?: number;
+  evaluation_duration?: number;
 }
 
 export interface ReportData {
