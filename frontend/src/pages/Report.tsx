@@ -182,8 +182,10 @@ export default function Report() {
   ];
 
   // 3. Detailed Breakdown uses the dynamic topic scores from the backend
-  const barData = reportData.skills_analysis && reportData.skills_analysis.length > 0
-    ? reportData.skills_analysis 
+  // We slice(1) from skills_analysis because the first skill corresponds 
+  // to the self intro question, which shouldn't be in the topic breakdown.
+  const barData = reportData.skills_analysis && reportData.skills_analysis.length > 1
+    ? reportData.skills_analysis.slice(1) 
     : radarData.slice(1); // fallback to rubrics if no topics
 
   return (
