@@ -8,7 +8,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, TrendingUp, HelpCircle, Activity } from 'lucide-react';
+import { X, TrendingUp, HelpCircle } from 'lucide-react';
 import QuestionCard from '../components/QuestionCard';
 import AudioRecorder from '../components/AudioRecorder';
 import ScorePanel from '../components/ScorePanel';
@@ -39,11 +39,6 @@ export default function Interview() {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // Performance metrics
-  const [sttDuration, setSttDuration] = useState<number | null>(null);
-  const [ttsDuration, setTtsDuration] = useState<number | null>(null);
-  const [evalDuration, setEvalDuration] = useState<number | null>(null);
-
   /**
    * Helper function: Plays Base64-encoded audio returned from the backend (OpenAI TTS).
    * Automatically interrupts any currently playing audio explicitly.
@@ -62,9 +57,7 @@ export default function Interview() {
     // On Mount: Load the very first question mapped by the Resume upload
     const q = localStorage.getItem('firstQuestion');
     const a = localStorage.getItem('firstAudio');
-    const tDuration = localStorage.getItem('firstTtsDuration');
     
-    if (tDuration) setTtsDuration(Number(tDuration));
     if (q) setCurrentQuestion(q);
     if (a) {
         // slightly delay the first audio so the page transition finishes smoothly
@@ -96,7 +89,6 @@ export default function Interview() {
       const sessionId = localStorage.getItem('sessionId') || undefined;
       const transResponse = await api.transcribeAudio(audioBlob, sessionId);
       
-      if (transResponse.stt_duration !== undefined) setSttDuration(transResponse.stt_duration);
       setPendingTranscript(transResponse.transcript);
       setIsVerifying(true);
       setIsProcessing(false);
@@ -118,9 +110,6 @@ export default function Interview() {
       const sessionId = localStorage.getItem('sessionId') || undefined;
       const response: SubmitAnswerResponse = await api.submitAnswer(pendingTranscript, sessionId);
       console.log("SUBMIT ANSWER RESPONSE:", response);
-
-      if (response.evaluation_duration !== undefined) setEvalDuration(response.evaluation_duration);
-      if (response.tts_duration !== undefined) setTtsDuration(response.tts_duration);
 
       setTimeout(() => {
     setScores({
@@ -297,28 +286,7 @@ setShowScorePopup(true);
             </div>
           </div>
 
-          {/* System Performance Panel */}
-          <div className="glass-panel p-6 rounded-2xl flex-shrink-0 animate-fade-in-up">
-            <div className="flex items-center gap-2 mb-4 text-dark-muted">
-                <Activity className="w-5 h-5" />
-                <h3 className="text-sm font-semibold uppercase tracking-wider">System Performance</h3>
-            </div>
-            
-            <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/5">
-                    <span className="text-slate-400 font-medium">STT (Transcribing)</span>
-                    <span className="text-white font-mono">{sttDuration !== null ? `${sttDuration.toFixed(2)}s` : '--'}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/5">
-                    <span className="text-slate-400 font-medium">LLM Evaluation</span>
-                    <span className="text-white font-mono">{evalDuration !== null ? `${evalDuration.toFixed(2)}s` : '--'}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/5">
-                    <span className="text-slate-400 font-medium">TTS (Speech Gen)</span>
-                    <span className="text-white font-mono">{ttsDuration !== null ? `${ttsDuration.toFixed(2)}s` : '--'}</span>
-                </div>
-            </div>
-          </div>
+
 
         </div>
       </div>
