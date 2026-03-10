@@ -53,19 +53,14 @@ AI-Mock-Interview-System/
    ```bash
    cd backend
    ```
-2. Create and activate a Virtual Environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   ```
-3. Install dependencies:
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-4. Configure your `.env` file with the required variables (e.g., `OPENAI_API_KEY`).
-5. Run the FastAPI server:
+3. Configure your `.env` file with the required variables (e.g., `OPENAI_API_KEY`).
+4. Run the FastAPI server:
    ```bash
-   uvicorn main:app --reload
+   python -m uvicorn app:app --reload
    ```
 
 ### Frontend Setup
@@ -75,6 +70,7 @@ AI-Mock-Interview-System/
    ```
 2. Install package dependencies:
    ```bash
+   pip install -r requirements.txt
    npm install
    ```
 3. Start the development server:
