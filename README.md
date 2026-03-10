@@ -57,7 +57,12 @@ AI-Mock-Interview-System/
    ```bash
    pip install -r requirements.txt
    ```
-3. Configure your `.env` file with the required variables (e.g., `OPENAI_API_KEY`).
+3. Configure your `.env` file with the required variables :
+   ```bash
+   OPENAI_API_KEY = "YOUR_API_KEY"
+   OPENAI_BASE_URL = "YOUR_BASE_URL"
+   ```
+    
 4. Run the FastAPI server:
    ```bash
    python -m uvicorn app:app --reload
